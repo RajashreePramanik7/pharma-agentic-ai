@@ -5,10 +5,10 @@ from config.database import engine, Base
 
 app = FastAPI(title="Agentic AI - Pharma Innovation API")
 
-# Allow frontend access
+# Allow frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # match your Vite frontend
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -18,7 +18,7 @@ app.add_middleware(
 Base.metadata.create_all(bind=engine)
 
 # Register routers
-app.include_router(agent_routes.router)
+app.include_router(agent_routes.router)  # <--- important
 app.include_router(user_routes.router)
 
 @app.get("/")
