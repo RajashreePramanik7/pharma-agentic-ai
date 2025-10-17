@@ -1,0 +1,13 @@
+{
+  "Paracetamol": {
+    "patents": [
+      {"title": "Paracetamol extended release", "status": "active", "expiry": "2030-12-31"},
+      {"title": "Paracetamol combination therapy", "status": "expired", "expiry": "2018-06-30"}
+    ]
+  },
+  "Ibuprofen": {
+    "patents": [
+      {"title": "Ibuprofen sustained release", "status": "active", "expiry": "2028-08-15"}
+    ]
+  }
+}

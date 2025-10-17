@@ -1,9 +1,20 @@
-from fastapi import APIRouter
-from agents.master_agent import run_master_agent
+# routes/agents_routes.py
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from agents.master_agent import MasterAgent
 
-router = APIRouter(prefix="/agent", tags=["Agents"])
+router = APIRouter()
+master_agent = MasterAgent()
 
-@router.get("/analyze")
-def analyze_molecule(molecule: str):
-    result = run_master_agent(molecule)
-    return result
+# Request schema
+class MoleculeRequest(BaseModel):
+    molecule: str
+    sources: list[str] = ["market", "patent", "trials", "web", "trade"]
+
+@router.post("/api/molecule")
+def analyze_molecule(request: MoleculeRequest):
+    try:
+        results = master_agent.analyze_molecule(request.molecule, request.sources)
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

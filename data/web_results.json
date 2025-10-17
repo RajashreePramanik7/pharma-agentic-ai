@@ -1,0 +1,13 @@
+{
+  "Paracetamol": {
+    "articles": [
+      {"title": "Paracetamol market growth in 2025", "url": "https://example.com/article1"},
+      {"title": "New Paracetamol formulations", "url": "https://example.com/article2"}
+    ]
+  },
+  "Ibuprofen": {
+    "articles": [
+      {"title": "Ibuprofen sales trends", "url": "https://example.com/article3"}
+    ]
+  }
+}

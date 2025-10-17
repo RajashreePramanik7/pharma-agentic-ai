@@ -1,0 +1,5 @@
+{
+  "Paracetamol": {"exports": 500, "imports": 200},
+  "Ibuprofen": {"exports": 300, "imports": 150},
+  "Aspirin": {"exports": 400, "imports": 100}
+}
