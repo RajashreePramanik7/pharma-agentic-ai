@@ -2,6 +2,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 from routes import agent_routes, user_routes
 from config.database import engine, Base
+from routes import agent_routes, user_routes, history_routes
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title="Agentic AI - Pharma Innovation API")
 
@@ -16,10 +18,11 @@ app.add_middleware(
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
-
+app.mount("/static", StaticFiles(directory="static"), name="static")
 # Register routers
 app.include_router(agent_routes.router)  # <--- important
 app.include_router(user_routes.router)
+app.include_router(history_routes.router)
 
 @app.get("/")
 def home():

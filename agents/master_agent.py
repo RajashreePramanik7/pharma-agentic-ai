@@ -1,4 +1,5 @@
 # agents/master_agent.py
+from datetime import datetime
 from .iqvia_agent import IQVIAAgent
 from .exim_agent import EXIMAgent
 from .patent_agent import PatentAgent
@@ -16,6 +17,7 @@ class MasterAgent:
         self.report = ReportAgent()
 
     def analyze_molecule(self, molecule, sources=["market","patent","trials","web","trade"]):
+        
         results = {}
 
         if "market" in sources:
@@ -30,6 +32,7 @@ class MasterAgent:
             results["web"] = self.web.get_web_insights(molecule)
 
         # Generate PDF report
-        report_file = self.report.generate_report(molecule, results)
-        results["report_file"] = report_file
+        report_file = f"static/reports/{molecule}_report_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
+        results["report_file"] = report_file.replace("\\", "/")  # ensure forward slashes
+
         return results
