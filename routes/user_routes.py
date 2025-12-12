@@ -1,23 +1,23 @@
 # routes/user_routes.py
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
+
 from config.database import get_db
 from models.user_model import User
 from utils.auth import (
     hash_password,
     verify_password,
-    create_access_token,
-    get_current_user
+    create_access_token
 )
 
 router = APIRouter()
 
 
-# --------------------------------
-# Request Schemas
-# --------------------------------
+# -----------------------------
+# Pydantic Schemas
+# -----------------------------
 class SignupSchema(BaseModel):
     name: str
     email: EmailStr
@@ -29,53 +29,43 @@ class LoginSchema(BaseModel):
     password: str
 
 
-# --------------------------------
-# SIGNUP — Create New User
-# --------------------------------
+# -----------------------------
+# SIGNUP
+# -----------------------------
 @router.post("/api/users/register")
-def register(data: SignupSchema, db: Session = Depends(get_db)):
+def register_user(body: SignupSchema, db: Session = Depends(get_db)):
+    # Check if email exists
+    user = db.query(User).filter(User.email == body.email).first()
+    if user:
+        raise HTTPException(status_code=400, detail="Email already registered")
 
-    # Check if user already exists
-    existing = db.query(User).filter(User.email == data.email).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered.")
-
-    # Create new user
-    user = User(
-        name=data.name,
-        email=data.email,
-        hashed_password=hash_password(data.password),
-        provider="email"
+    new_user = User(
+        name=body.name,
+        email=body.email,
+        password=hash_password(body.password)
     )
 
-    db.add(user)
+    db.add(new_user)
     db.commit()
-    db.refresh(user)
+    db.refresh(new_user)
 
-    return {"message": "User registered successfully."}
+    return {"message": "User registered successfully"}
 
 
-# --------------------------------
-# LOGIN — Return JWT Token
-# --------------------------------
+# -----------------------------
+# LOGIN
+# -----------------------------
 @router.post("/api/users/login")
-def login(data: LoginSchema, db: Session = Depends(get_db)):
-
-    user = db.query(User).filter(User.email == data.email).first()
+def login_user(body: LoginSchema, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == body.email).first()
 
     if not user:
-        raise HTTPException(status_code=400, detail="Invalid email or password.")
+        raise HTTPException(status_code=400, detail="User not found")
 
-    if user.provider != "email":
-        raise HTTPException(
-            status_code=400,
-            detail="This account requires a different login method."
-        )
+    if not verify_password(body.password, user.password):
+        raise HTTPException(status_code=400, detail="Incorrect password")
 
-    if not verify_password(data.password, user.hashed_password):
-        raise HTTPException(status_code=400, detail="Invalid email or password.")
-
-    token = create_access_token({"sub": user.email})
+    token = create_access_token({"user_id": user.id})
 
     return {
         "message": "Login successful",
@@ -84,32 +74,5 @@ def login(data: LoginSchema, db: Session = Depends(get_db)):
             "id": user.id,
             "name": user.name,
             "email": user.email,
-            "provider": user.provider,
-            "created_at": user.created_at,
-        },
+        }
     }
-
-
-# --------------------------------
-# GET CURRENT USER PROFILE
-# --------------------------------
-@router.get("/api/users/me")
-def get_my_profile(
-    email: str = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    user = db.query(User).filter(User.email == email).first()
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    return {
-        "id": user.id,
-        "name": user.name,
-        "email": user.email,
-        "provider": user.provider,
-        "created_at": user.created_at,
-    }
-@router.post("/api/users/register")
-def register(data: SignupSchema, db: Session = Depends(get_db)):
-    print("Signup request received:", data)

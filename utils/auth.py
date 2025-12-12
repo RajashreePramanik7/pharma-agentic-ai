@@ -72,3 +72,11 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
 
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid or expired token.")
+
+def hash_password(password: str):
+    password = password[:72]  # prevent bcrypt overflow bug
+    return pwd_context.hash(password)
+
+def verify_password(plain: str, hashed: str):
+    plain = plain[:72]
+    return pwd_context.verify(plain, hashed)
