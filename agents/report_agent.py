@@ -1,12 +1,12 @@
-# agents/report_agent.py
-import os
-from datetime import datetime
+from fpdf import FPDF
 
-class ReportAgent:
-    def generate_report(self, molecule, data):
-        filename = f"{molecule}_report_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
-        file_path = os.path.join("static/reports", filename)
-        # For now, just create an empty PDF file placeholder
-        with open(file_path, "w") as f:
-            f.write(f"Report for {molecule}\n\n{data}")
-        return file_path
+def generate_report(query, summary, results):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+
+    pdf.multi_cell(0, 8, f"Query:\n{query}\n\nSummary:\n{summary}")
+    path = f"static/reports/{query[:10].replace(' ', '_')}.pdf"
+    pdf.output(path)
+
+    return f"/{path}"

@@ -1,11 +1,26 @@
-# agents/web_intelligence_agent.py
-import json, os
+import requests
+import os
 
-class WebAgent:
-    def __init__(self):
-        file_path = os.path.join(os.path.dirname(__file__), "../data/web_results.json")
-        with open(file_path) as f:
-            self.data = json.load(f)
+SERP_API_KEY = os.getenv("SERP_API_KEY")
 
-    def get_web_insights(self, molecule):
-        return self.data.get(molecule, {"guidelines": [], "news": [], "pubs": []})
+def web_search(query: str):
+    res = requests.get(
+        "https://serpapi.com/search",
+        params={
+            "q": query,
+            "api_key": SERP_API_KEY,
+            "engine": "google"
+        }
+    )
+
+    results = res.json()["organic_results"]
+
+    sources = [
+        {"title": r["title"], "url": r["link"]}
+        for r in results[:5]
+    ]
+
+    return {
+        "summary": "Key findings extracted from recent web sources.",
+        "sources": sources
+    }

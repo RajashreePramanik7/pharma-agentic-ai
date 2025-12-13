@@ -1,11 +1,22 @@
 # agents/exim_agent.py
-import json, os
+import requests
+import os
 
-class EXIMAgent:
-    def __init__(self):
-        file_path = os.path.join(os.path.dirname(__file__), "../data/exim_data.json")
-        with open(file_path) as f:
-            self.data = json.load(f)
+EXIM_API_KEY = os.getenv("EXIM_API_KEY")
 
-    def get_trade_data(self, molecule):
-        return self.data.get(molecule, {"imports": 0, "exports": 0, "dependencies": []})
+def fetch_exim_trends(molecule: str):
+    response = requests.get(
+        "https://api.eximdata.com/v1/trade",
+        params={"query": molecule},
+        headers={"Authorization": f"Bearer {EXIM_API_KEY}"}
+    )
+
+    data = response.json()
+
+    return {
+        "molecule": molecule,
+        "top_importers": data["top_importing_countries"],
+        "top_exporters": data["top_exporting_countries"],
+        "volume_trend": data["trend"],
+        "import_dependency": data["dependency_score"]
+    }

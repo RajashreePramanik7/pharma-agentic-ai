@@ -1,11 +1,15 @@
-# agents/patent_agent.py
-import json, os
+# patent_agent.py
+import requests
 
-class PatentAgent:
-    def __init__(self):
-        file_path = os.path.join(os.path.dirname(__file__), "../data/patents_data.json")
-        with open(file_path) as f:
-            self.data = json.load(f)
+USPTO_API = "https://developer.uspto.gov/ibd-api/v1/patent/application"
 
-    def get_patent_info(self, molecule):
-        return self.data.get(molecule, {"active_patents": [], "expiry": [], "freetooperate": True})
+def search_patents(molecule: str):
+    query = {
+        "q": f"{molecule}",
+        "f": ["patentNumber", "patentTitle", "patentIssueDate"],
+        "o": {"per_page": 10}
+    }
+
+    res = requests.post(USPTO_API, json=query)
+    res.raise_for_status()
+    return res.json()

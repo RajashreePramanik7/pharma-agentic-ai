@@ -1,11 +1,18 @@
-# agents/trials_agent.py
-import json, os
+# trials_agent.py
+import requests
 
-class TrialsAgent:
-    def __init__(self):
-        file_path = os.path.join(os.path.dirname(__file__), "../data/trials_data.json")
-        with open(file_path) as f:
-            self.data = json.load(f)
+BASE_URL = "https://clinicaltrials.gov/api/query/study_fields"
 
-    def get_trial_info(self, molecule):
-        return self.data.get(molecule, {"active_trials": [], "phase_distribution": {}, "sponsors": []})
+def get_trials(molecule: str):
+    params = {
+        "expr": molecule,
+        "fields": "NCTId,Condition,Phase,OverallStatus,SponsorName",
+        "min_rnk": 1,
+        "max_rnk": 20,
+        "fmt": "json"
+    }
+
+    res = requests.get(BASE_URL, params=params, timeout=20)
+    res.raise_for_status()
+
+    return res.json()["StudyFieldsResponse"]["StudyFields"]
