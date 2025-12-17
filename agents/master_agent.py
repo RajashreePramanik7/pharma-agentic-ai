@@ -29,7 +29,7 @@ class MasterAgent:
         # If no sources selected → ALL
         if not sources:
             sources = [
-                "Market Trends",
+                "Market Trends","Trade",
                 "Clinical Trials",
                 "Patent",
                 "Web Search",
@@ -46,7 +46,7 @@ class MasterAgent:
         if "Market Trends" in sources:
             market_data = self.iqvia.fetch_market_data()
 
-        if "Market Trends" in sources:
+        if "Trade" in sources:
             trade_data = self.exim.fetch_trade_data()
 
         if "Patent" in sources:
