@@ -1,4 +1,3 @@
-# agents/master_agent.py
 from agents.iqvia_agent import IQVIAAgent
 from agents.exim_agent import EXIMAgent
 from agents.patent_agent import PatentAgent
@@ -6,7 +5,8 @@ from agents.trials_agent import ClinicalTrialsAgent
 from agents.internal_knowledge_agent import InternalKnowledgeAgent
 from agents.web_intelligence_agent import WebIntelligenceAgent
 from agents.report_agent import ReportAgent
-import requests
+from utils.pdf_generator import generate_portfolio_pdf
+
 
 class MasterAgent:
     def __init__(self):
@@ -26,10 +26,10 @@ class MasterAgent:
         country: str,
         sources: list[str],
     ):
-        # If no sources selected → ALL
         if not sources:
             sources = [
-                "Market Trends","Trade",
+                "Market Trends",
+                "Trade",
                 "Clinical Trials",
                 "Patent",
                 "Web Search",
@@ -65,18 +65,14 @@ class MasterAgent:
             web_results = self.web.search(f"{therapy} {country} guidelines")
 
         text_summary = self.report.build_text_summary(
-            market_data,
-            trade_data,
-            patent_data
+            market_data, trade_data, patent_data
         )
 
         summary_table = self.report.build_summary_dataframe(
-            market_data,
-            trade_data,
-            patent_data
+            market_data, trade_data, patent_data
         )
 
-        return {
+        response = {
             "query": query,
             "sources_used": sources,
             "summary_text": text_summary,
@@ -88,3 +84,9 @@ class MasterAgent:
             "web_results": web_results,
             "summary_table": summary_table.to_dict(orient="records"),
         }
+
+        # ✅ PDF
+        pdf_path = generate_portfolio_pdf(response)
+        response["pdf_url"] = f"/api/agent/download/{pdf_path.name}"
+
+        return response
