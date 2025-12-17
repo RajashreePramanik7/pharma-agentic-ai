@@ -9,7 +9,7 @@ from agents.report_agent import ReportAgent
 import requests
 
 class MasterAgent:
-    def _init_(self):
+    def __init__(self):
         self.iqvia = IQVIAAgent()
         self.exim = EXIMAgent()
         self.patent = PatentAgent()
