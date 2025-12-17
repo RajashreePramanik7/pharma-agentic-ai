@@ -1,118 +1,87 @@
-from agents.iqvia_agent import run as iqvia_run
-from agents.exim_agent import run as exim_run
-from agents.trials_agent import run as trials_run
-from agents.patent_agent import run as patent_run
-from agents.web_intelligence_agent import run as web_run
-from agents.report_agent import generate_report
-
+# agents/master_agent.py
+from agents.iqvia_agent import IQVIAAgent
+from agents.exim_agent import EXIMAgent
+from agents.patent_agent import PatentAgent
+from agents.trials_agent import ClinicalTrialsAgent
+from agents.internal_knowledge_agent import InternalKnowledgeAgent
+from agents.web_intelligence_agent import WebIntelligenceAgent
+from agents.report_agent import ReportAgent
+import requests
 
 class MasterAgent:
-    """
-    Master Agent = Orchestrator
-    """
+    def __init__(self):
+        self.iqvia = IQVIAAgent()
+        self.exim = EXIMAgent()
+        self.patent = PatentAgent()
+        self.trials = ClinicalTrialsAgent()
+        self.internal = InternalKnowledgeAgent()
+        self.web = WebIntelligenceAgent()
+        self.report = ReportAgent()
 
-    def handle_prompt(self, prompt: str) -> dict:
-        """
-        Entry point from FastAPI
-        """
-        tasks = self._decompose_prompt(prompt)
+    def _call_report_pdf(self, sections):
+        try:
+            resp = requests.post(
+                "http://localhost:7006/generate-report",
+                json={"title": "Portfolio Analysis", "sections": sections},
+                timeout=10,
+            )
+            if resp.ok:
+                # In real use, save to storage and return link; here we just say "PDF generated"
+                return "PDF report generated (download via /generate-report call)."
+        except Exception:
+            return "PDF generation failed."
+        return "PDF generation failed."
 
-        results = {}
+    def analyze_portfolio(self, query: str, product: str, therapy: str, country: str):
+        # 1. Market
+        market_data = self.iqvia.fetch_market_data()
+        market_text = self.iqvia.get_summary(market_data)
 
-        if "market" in tasks:
-            results["market"] = iqvia_run(tasks["market"])
+        # 2. Trade
+        trade_data = self.exim.fetch_trade_data()
+        trade_bullets = self.exim.get_bullets(trade_data)
 
-        if "exim" in tasks:
-            results["exim"] = exim_run(tasks["exim"])
+        # 3. Patent
+        patent_data = self.patent.fetch_patent_status()
 
-        if "trials" in tasks:
-            results["trials"] = trials_run(tasks["trials"])
+        # 4. Trials
+        trials = self.trials.fetch_trials(indication=therapy, country=country)
+        trials_summary = self.trials.get_summary(trials)
 
-        if "patents" in tasks:
-            results["patents"] = patent_run(tasks["patents"])
+        # 5. Internal docs
+        internal_docs = self.internal.search(f"{therapy} {country}")
+        internal_summary = self.internal.get_summary(internal_docs)
 
-        if "web" in tasks:
-            results["web"] = web_run(tasks["web"])
+        # 6. Web
+        web_results = self.web.search(f"{therapy} {country} guidelines")
+        web_summary = self.web.get_summary(web_results)
 
-        summary = self._synthesize(prompt, results)
+        # 7. Text + Data summary
+        text_summary = self.report.build_text_summary(market_data, trade_data, patent_data)
+        df_summary = self.report.build_summary_dataframe(market_data, trade_data, patent_data)
 
-        report_url = generate_report(
-            prompt=prompt,
-            results=results,
-            summary=summary
-        )
+        sections = [
+            {"heading": "User Question", "text": query},
+            {"heading": "Market Insights", "text": market_text},
+            {"heading": "Trade Insights", "text": " ".join(trade_bullets)},
+            {"heading": "Patent Landscape", "text": f"Patent data: {patent_data}"},
+            {"heading": "Clinical Trials", "text": trials_summary},
+            {"heading": "Internal Insights", "text": internal_summary},
+            {"heading": "Web Signals", "text": web_summary},
+            {"heading": "Overall Summary", "text": text_summary},
+        ]
+
+        pdf_note = self._call_report_pdf(sections)
 
         return {
-            "prompt": prompt,
-            "summary": summary,
-            "results": results,
-            "report_url": report_url
+            "summary_text": text_summary,
+            "market_data": market_data,
+            "trade_data": trade_data,
+            "patent_data": patent_data,
+            "trials": trials,
+            "internal_docs": internal_docs,
+            "web_results": web_results,
+            "summary_table": df_summary.to_dict(orient="records"),
+            "pdf_status": pdf_note,
         }
 
-    # ---------------------------------
-    # Prompt Decomposition
-    # ---------------------------------
-    def _decompose_prompt(self, prompt: str) -> dict:
-        """
-        Simple rule-based decomposition.
-        Later replace with LLM classification.
-        """
-
-        prompt_lower = prompt.lower()
-
-        tasks = {}
-
-        if "market" in prompt_lower or "sales" in prompt_lower:
-            tasks["market"] = {"query": prompt}
-
-        if "export" in prompt_lower or "import" in prompt_lower:
-            tasks["exim"] = {"query": prompt}
-
-        if "trial" in prompt_lower or "clinical" in prompt_lower:
-            tasks["trials"] = {"query": prompt}
-
-        if "patent" in prompt_lower or "ip" in prompt_lower:
-            tasks["patents"] = {"query": prompt}
-
-        # always do web search
-        tasks["web"] = {"query": prompt}
-
-        return tasks
-
-    # ---------------------------------
-    # Synthesis
-    # ---------------------------------
-    def _synthesize(self, prompt: str, results: dict) -> str:
-        """
-        Combine agent outputs into a readable answer.
-        """
-
-        response = f"### Research Summary for:\n**{prompt}**\n\n"
-
-        if "market" in results:
-            response += "## Market Insights\n"
-            response += results["market"]["summary"] + "\n\n"
-
-        if "exim" in results:
-            response += "## EXIM Trends\n"
-            response += results["exim"]["summary"] + "\n\n"
-
-        if "trials" in results:
-            response += "## Clinical Trials\n"
-            response += results["trials"]["summary"] + "\n\n"
-
-        if "patents" in results:
-            response += "## Patent Landscape\n"
-            response += results["patents"]["summary"] + "\n\n"
-
-        if "web" in results:
-            response += "## Web Intelligence\n"
-            response += results["web"]["summary"] + "\n\n"
-
-        response += "### Recommendation\n"
-        response += (
-            "Based on the above data, this molecule shows potential for "
-            "repurposing with moderate competition and identifiable unmet needs."
-        )
-
-        return response

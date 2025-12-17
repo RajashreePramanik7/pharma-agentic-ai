@@ -1,13 +1,19 @@
-# routes/agent_routes.py
-from fastapi import APIRouter
-from agents.master_agent import run_master_agent
+from fastapi import APIRouter, HTTPException
+from agents.master_agent import MasterAgent
 
-router = APIRouter()
+router = APIRouter(prefix="/api/agent", tags=["Agentic AI"])
 
-@router.post("/api/agent/query")
+@router.post("/query")
 def run_query(payload: dict):
-    query = payload["query"]
-    molecule = payload["molecule"]
+    try:
+        agent = MasterAgent()
 
-    result = run_master_agent(query, molecule)
-    return result
+        return agent.analyze_portfolio(
+            query=payload.get("query"),
+            product=payload.get("molecule", "salbutamol"),
+            therapy=payload.get("therapy", "respiratory"),
+            country=payload.get("country", "India"),
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

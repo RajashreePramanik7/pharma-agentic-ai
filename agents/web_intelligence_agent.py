@@ -1,26 +1,25 @@
 import requests
-import os
+import pandas as pd
 
-SERP_API_KEY = os.getenv("SERP_API_KEY")
+class WebIntelligenceAgent:
+    BASE_URL = "http://localhost:7005/web-search"
 
-def web_search(query: str):
-    res = requests.get(
-        "https://serpapi.com/search",
-        params={
-            "q": query,
-            "api_key": SERP_API_KEY,
-            "engine": "google"
-        }
-    )
+    def search(self, query: str):
+        try:
+            resp = requests.get(self.BASE_URL, params={"q": query}, timeout=5)
+            return resp.json().get("results", []) if resp.ok else []
+        except Exception:
+            return []
 
-    results = res.json()["organic_results"]
+    def to_dataframe(self, results):
+        if not results:
+            return pd.DataFrame(columns=["title", "url", "snippet"])
+        return pd.DataFrame(results)[["title", "url", "snippet"]]
 
-    sources = [
-        {"title": r["title"], "url": r["link"]}
-        for r in results[:5]
-    ]
-
-    return {
-        "summary": "Key findings extracted from recent web sources.",
-        "sources": sources
-    }
+    def get_summary(self, results):
+        if not results:
+            return "No web signals found."
+        bullets = []
+        for r in results[:3]:
+            bullets.append(f"- {r['title']} ({r['url']})")
+        return "Key external references:\n" + "\n".join(bullets)

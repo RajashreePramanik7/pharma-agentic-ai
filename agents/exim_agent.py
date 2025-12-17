@@ -1,22 +1,21 @@
-# agents/exim_agent.py
+# exim_agents.py
 import requests
-import os
 
-EXIM_API_KEY = os.getenv("EXIM_API_KEY")
+class EXIMAgent:
+    def fetch_trade_data(self):
+        try:
+            resp = requests.get("http://localhost:7001/trade-volume", timeout=5)
+            return resp.json() if resp.ok else {}
+        except Exception:
+            return {}
 
-def fetch_exim_trends(molecule: str):
-    response = requests.get(
-        "https://api.eximdata.com/v1/trade",
-        params={"query": molecule},
-        headers={"Authorization": f"Bearer {EXIM_API_KEY}"}
-    )
-
-    data = response.json()
-
-    return {
-        "molecule": molecule,
-        "top_importers": data["top_importing_countries"],
-        "top_exporters": data["top_exporting_countries"],
-        "volume_trend": data["trend"],
-        "import_dependency": data["dependency_score"]
-    }
+    def get_bullets(self, data):
+        if not data:
+            return ["No trade data available."]
+        bullets = [
+            f"API: {data.get('api_name','N/A')}",
+            f"Export volume: {data.get('export_volume_kg',0)} kg",
+            f"Import dependency: {data.get('import_dependency','N/A')}",
+            f"Key countries: {', '.join(data.get('countries', []))}",
+        ]
+        return bullets

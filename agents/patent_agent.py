@@ -1,15 +1,10 @@
-# patent_agent.py
+# patent_agents.py
 import requests
 
-USPTO_API = "https://developer.uspto.gov/ibd-api/v1/patent/application"
-
-def search_patents(molecule: str):
-    query = {
-        "q": f"{molecule}",
-        "f": ["patentNumber", "patentTitle", "patentIssueDate"],
-        "o": {"per_page": 10}
-    }
-
-    res = requests.post(USPTO_API, json=query)
-    res.raise_for_status()
-    return res.json()
+class PatentAgent:
+    def fetch_patent_status(self):
+        try:
+            resp = requests.get("http://localhost:7002/patent-status", timeout=5)
+            return resp.json() if resp.ok else {}
+        except Exception:
+            return {}

@@ -1,27 +1,20 @@
-# iqvia_agent.py
+# iqvia_agents.py
 import requests
-import os
 
-IQVIA_API_KEY = os.getenv("IQVIA_API_KEY")
-IQVIA_BASE_URL = "https://api.iqvia.com/v1"
+class IQVIAAgent:
+    def fetch_market_data(self):
+        try:
+            resp = requests.get("http://localhost:7000/market-size", timeout=5)
+            return resp.json() if resp.ok else {}
+        except Exception:
+            return {}
 
-def get_market_data(molecule: str):
-    headers = {
-        "Authorization": f"Bearer {IQVIA_API_KEY}",
-        "Content-Type": "application/json"
-    }
-
-    payload = {
-        "molecule": molecule,
-        "region": "India"
-    }
-
-    response = requests.post(
-        f"{IQVIA_BASE_URL}/market/insights",
-        json=payload,
-        headers=headers,
-        timeout=30
-    )
-
-    response.raise_for_status()
-    return response.json()
+    def get_summary(self, data):
+        if not data:
+            return "No market data available."
+        return (
+            f"Therapy area: {data.get('therapy_area','N/A')}, "
+            f"Market size: ${data.get('market_size',0)/1e6:.1f}M, "
+            f"CAGR: {data.get('cagr',0)}%, "
+            f"Competitors: {', '.join(data.get('competitors', []))}"
+        )
