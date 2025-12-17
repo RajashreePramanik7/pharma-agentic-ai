@@ -13,6 +13,7 @@ def run_query(payload: dict):
             product=payload.get("molecule", "salbutamol"),
             therapy=payload.get("therapy", "respiratory"),
             country=payload.get("country", "India"),
+            sources=payload.get("sources", []),  
         )
 
     except Exception as e:
