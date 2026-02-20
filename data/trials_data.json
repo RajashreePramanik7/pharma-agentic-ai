@@ -1,0 +1,13 @@
+{
+  "Paracetamol": {
+    "trials": [
+      {"title": "Paracetamol in pediatric pain", "phase": "III", "status": "Completed"},
+      {"title": "Paracetamol for migraine", "phase": "II", "status": "Recruiting"}
+    ]
+  },
+  "Ibuprofen": {
+    "trials": [
+      {"title": "Ibuprofen in arthritis", "phase": "IV", "status": "Completed"}
+    ]
+  }
+}
